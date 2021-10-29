@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+
+import sys
+
+import yaml
+from jinja2 import (
+    Environment,
+)
+
+
+def replace_text_in_lines(lines, strings_to_replace):
+    replaced_lines = []
+
+    for line in lines.splitlines():
+        for match, replace in strings_to_replace.items():
+            line = line.replace(match, replace)
+        replaced_lines.append(line)
+
+    return '\n'.join(replaced_lines)
+
+
+if __name__ == '__main__':
+    with open(sys.argv[1], 'r') as f:
+        config = yaml.load(f, Loader=yaml.SafeLoader)
+
+    env = Environment()
+    with open(config['templateFile'], 'r') as f:
+        template = env.from_string(f.read())
+
+    for target in config['renderTargets']:
+        print('---')
+        print(template.render(**target))
