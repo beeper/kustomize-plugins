@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+
+import sys
+
+import yaml
+
+
+def traverse_compare(value1, value2) -> bool:
+    if isinstance(value1, list):
+        if not isinstance(value2, list):
+            return False
+        elif len(value1) != len(value2):
+            return False
+        for i in range(len(value1)):
+            if not traverse_compare(value1[i], value2[i]):
+                return False
+    elif isinstance(value1, dict):
+        if not isinstance(value2, dict):
+            return False
+        for key in value1:
+            if not key in value2 or not traverse_compare(value1[key], value2[key]):
+                return False
+    else:
+        if value1 != value2:
+            return False
+    return True
+
+
+def should_exclude_resource(k8s_object, exclude_resources):
+    for exclude_resource in exclude_resources:
+        if traverse_compare(exclude_resource, k8s_object):
+            return True
+    return False
+
+
+if __name__ == '__main__':
+    with open(sys.argv[1], 'r') as f:
+        config = yaml.load(f, Loader=yaml.SafeLoader)
+
+    for k8s_object in yaml.safe_load_all(sys.stdin):
+        k8s_yaml = yaml.dump(k8s_object, default_flow_style=False)
+
+        if should_exclude_resource(k8s_object, config['excludedResources']):
+            continue
+
+        print('---')
+        print(k8s_yaml)
+        # print('paul')
