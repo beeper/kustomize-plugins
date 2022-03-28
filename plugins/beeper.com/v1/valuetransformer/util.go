@@ -87,7 +87,9 @@ func transformInterface(i interface{}, transforms []Transform) interface{} {
 		}
 		return out
 	default:
-		fmt.Fprintf(os.Stderr, "Unhandled type during transforming: %T, ignored\n", t)
+		if DebugEnabled {
+			fmt.Fprintf(os.Stderr, "Unhandled type during transforming: %T, ignored\n", t)
+		}
 	}
 	return i
 }
@@ -124,6 +126,10 @@ func applyTransforms(resource map[string]interface{}, config *TransformerConfig,
 		}
 
 		transforms = append(transforms, Transform{regex, &source})
+
+		if DebugEnabled {
+			fmt.Fprintf(os.Stderr, "Enabled transform regex '%s' with source '%s' to %s/%s (target was %s/%s in %s)\n", regex.String(), t.Source, kind, name, t.Target.Kind, t.Target.Name, t.Target.Namespace)
+		}
 	}
 
 	return transformInterface(resource, transforms).(map[string]interface{})

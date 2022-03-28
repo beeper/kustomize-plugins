@@ -27,8 +27,7 @@ metadata:
 sources:
   <alias>:
     type: <type>
-    name: [source specific name]
-    path: [source specific path]
+    path: [source specific location]
     awsRegion: [AWS region]
     awsRoleArn: [AWS role ARN]
 transforms:
@@ -126,7 +125,7 @@ Non-JSON secrets are not supported in v1.
 sources:
   <alias>:
     type: SecretsManager
-    name: some/secret
+    path: some/secret
     # AWS keys are optional, default env context is used as the base
     awsRegion: eu-central-1
     awsRoleArn: arn:...

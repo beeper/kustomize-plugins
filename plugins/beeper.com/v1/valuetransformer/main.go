@@ -2,8 +2,10 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 )
@@ -30,6 +32,8 @@ func convertVariableConfig(config *SourceConfig) (map[string]string, error) {
 	return out, nil
 }
 
+var DebugEnabled bool
+
 func main() {
 	rl := &ResourceList{}
 	input, err := ioutil.ReadAll(os.Stdin)
@@ -47,6 +51,13 @@ func main() {
 
 	if rl.FunctionConfig.ApiVersion != "beeper.com/v1" {
 		panic(errors.New("unsupported apiVersion, expected beeper.com/v1"))
+	}
+
+	envDebug := strings.ToUpper(os.Getenv("VALUETRANSFORMER_DEBUG"))
+	if len(envDebug) > 0 && (envDebug[0] == '1' || envDebug[0] == 'T') {
+		DebugEnabled = true
+		fmt.Fprintf(os.Stderr, "- WARNING - ValueTransformer debugging enabled - WARNING -\n")
+		fmt.Fprintf(os.Stderr, "Input:\n%s\n", input)
 	}
 
 	// initialize all sources
@@ -71,6 +82,13 @@ func main() {
 			sources[name], _ = convertTerraformStateConfig(&source)
 		default:
 			panic(errors.New("Invalid source type " + source.Type))
+		}
+
+		if DebugEnabled {
+			fmt.Fprintf(os.Stderr, "Source '%s':\n", name)
+			for k, v := range sources[name] {
+				fmt.Fprintf(os.Stderr, "\t%s (%d chars)\n", k, len(v))
+			}
 		}
 	}
 

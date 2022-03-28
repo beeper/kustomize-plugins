@@ -41,9 +41,9 @@ func getMap(r map[string]interface{}, key string) map[string]interface{} {
 }
 
 type ResourceList struct {
-	Kind           string                    `yaml:"kind"`
-	Items          []map[string]interface{}  `yaml:"items"`
-	FunctionConfig TransformerConfig         `yaml:"functionConfig"`
+	Kind           string                   `yaml:"kind"`
+	Items          []map[string]interface{} `yaml:"items"`
+	FunctionConfig TransformerConfig        `yaml:"functionConfig"`
 }
 
 type TransformTarget struct {
@@ -55,7 +55,7 @@ type TransformTarget struct {
 type TransformConfig struct {
 	Source string          `yaml:"source"`
 	Regex  string          `yaml:"regex"`
-	Target TransformTarget `yaml:"targets"`
+	Target TransformTarget `yaml:"target"`
 }
 
 type SourceConfig struct {
