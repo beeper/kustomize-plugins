@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 func flattenToMap(i interface{}, path string, out map[string]string) {
@@ -50,28 +52,47 @@ func flattenToMap(i interface{}, path string, out map[string]string) {
 	}
 }
 
-func transformInterface(i interface{}, transforms []Transform) interface{} {
+func transformInterface(i interface{}, transforms []Transform, path string) interface{} {
 	switch t := i.(type) {
 	case map[string]interface{}:
 		out := make(map[string]interface{})
 		for k, v := range t {
-			out[k] = transformInterface(v, transforms)
+			out[k] = transformInterface(v, transforms, path+"/"+k)
 		}
 		return out
 	case []interface{}:
 		out := make([]interface{}, len(t))
 		for k, v := range t {
-			out[k] = transformInterface(v, transforms)
+			out[k] = transformInterface(v, transforms, "")
 		}
 		return out
 	case map[interface{}]interface{}:
 		out := make(map[interface{}]interface{})
 		for k, v := range t {
-			out[k] = transformInterface(v, transforms)
+			switch kt := k.(type) {
+			case string:
+				out[k] = transformInterface(v, transforms, path+"/"+kt)
+			default:
+				out[k] = transformInterface(v, transforms, "")
+			}
 		}
 		return out
 	case string:
-		out := t
+		var out string
+		b64encode := false
+
+		// FIXME: ugly way to handle encoded secrets
+		if strings.HasPrefix(path, "Secret/data/") {
+			if decoded, err := base64.StdEncoding.DecodeString(t); err == nil {
+				out = string(decoded)
+				b64encode = true
+			} else {
+				panic(err)
+			}
+		} else {
+			out = t
+		}
+
 		for _, transform := range transforms {
 			out = transform.regex.ReplaceAllStringFunc(out, func(sk string) string {
 				matches := transform.regex.FindStringSubmatch(sk)
@@ -85,6 +106,11 @@ func transformInterface(i interface{}, transforms []Transform) interface{} {
 				return repl
 			})
 		}
+
+		if b64encode {
+			out = base64.StdEncoding.EncodeToString([]byte(out))
+		}
+
 		return out
 	default:
 		if DebugEnabled {
@@ -132,5 +158,5 @@ func applyTransforms(resource map[string]interface{}, config *TransformerConfig,
 		}
 	}
 
-	return transformInterface(resource, transforms).(map[string]interface{})
+	return transformInterface(resource, transforms, kind).(map[string]interface{})
 }
