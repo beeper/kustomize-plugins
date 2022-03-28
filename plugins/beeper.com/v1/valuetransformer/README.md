@@ -93,6 +93,17 @@ sources:
       NAME: ALIAS
 ```
 
+### Exec
+Executes a command with `/bin/sh -c '<path>'` and expects the output to be valid YAML.
+Support may be expanded in the future.
+
+```yaml
+sources:
+  <alias>:
+    type: Exec
+    path: sops -d /path/to/secrets.enc.yaml
+```
+
 ### File
 
 Variable files, YAML or JSON. Vars is optional, default is to expand all. Remote files over `s3://` are supported.

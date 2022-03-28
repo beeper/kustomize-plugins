@@ -76,6 +76,8 @@ func main() {
 			sources[name], _ = convertEnvironmentConfig(&source)
 		case "Variable":
 			sources[name], _ = convertVariableConfig(&source)
+		case "Exec":
+			sources[name], _ = convertExecConfig(&source)
 		case "SecretsManager":
 			sources[name], _ = convertSecretsManagerConfig(&source)
 		case "TerraformState":
