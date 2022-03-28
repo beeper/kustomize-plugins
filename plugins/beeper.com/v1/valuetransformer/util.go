@@ -73,7 +73,7 @@ func transformInterface(i interface{}, transforms []Transform) interface{} {
 	case string:
 		out := t
 		for _, transform := range transforms {
-			out = transform.regex.ReplaceAllStringFunc(t, func(sk string) string {
+			out = transform.regex.ReplaceAllStringFunc(out, func(sk string) string {
 				matches := transform.regex.FindStringSubmatch(sk)
 				if len(matches) < 2 {
 					return sk
