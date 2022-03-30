@@ -20,7 +20,7 @@ type TerraformState struct {
 	//Resources        []interface{}              `json:"resources"`
 }
 
-func convertTerraformStateConfig(config *SourceConfig) (map[string]string, error) {
+func convertTerraformStateConfig(config *SourceConfig) map[string]string {
 	data, err := readFile(config)
 	if err != nil {
 		panic(err)
@@ -34,30 +34,23 @@ func convertTerraformStateConfig(config *SourceConfig) (map[string]string, error
 	out := make(map[string]string)
 
 	for name, output := range tfstate.Outputs {
-		oname := name
-		if len(config.Vars) > 0 {
-			var ok bool
-			if oname, ok = config.Vars[name]; !ok {
-				continue
-			}
-		}
 		if typ, ok := output.Type.(string); ok {
 			switch typ {
 			case "string":
 				if val, ok := output.Value.(string); ok {
-					out[oname] = val
+					out[name] = val
 				}
 			case "number":
 				if val, ok := output.Value.(float64); ok {
-					out[oname] = fmt.Sprintf("%f", val)
+					out[name] = fmt.Sprintf("%f", val)
 				}
 			case "bool":
 				if val, ok := output.Value.(bool); ok {
-					out[oname] = strconv.FormatBool(val)
+					out[name] = strconv.FormatBool(val)
 				}
 			}
 		}
 	}
 
-	return out, nil
+	return out
 }

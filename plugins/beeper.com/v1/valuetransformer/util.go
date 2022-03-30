@@ -10,6 +10,35 @@ import (
 	"strings"
 )
 
+func getString(r map[string]interface{}, key string) string {
+	i := r[key]
+
+	switch v := i.(type) {
+	case string:
+		return v
+	default:
+		return ""
+	}
+}
+
+func getMap(r map[string]interface{}, key string) map[string]interface{} {
+	i := r[key]
+	switch c := i.(type) {
+	case map[interface{}]interface{}:
+		nr := make(map[string]interface{})
+		for k, v := range c {
+			switch kc := k.(type) {
+			case string:
+				nr[kc] = v
+			}
+		}
+		r[key] = nr
+		return nr
+	default:
+		return make(map[string]interface{})
+	}
+}
+
 func flattenToMap(i interface{}, path string, out map[string]string) {
 	switch v := i.(type) {
 	case nil:
@@ -50,6 +79,42 @@ func flattenToMap(i interface{}, path string, out map[string]string) {
 		fmt.Fprintf(os.Stderr, "Unhandled type during flattening: %T, defaulting to %%v\n", v)
 		out[path] = fmt.Sprintf("%v", v)
 	}
+}
+
+func filterMap(in map[string]string, filter map[string]string) map[string]string {
+	if len(filter) > 0 {
+		out := make(map[string]string)
+		for k, v := range filter {
+			if ov, ok := in[k]; ok {
+				out[v] = ov
+			}
+		}
+		return out
+	}
+
+	return in
+}
+
+func expandEnvInterface(i interface{}) interface{} {
+	switch t := i.(type) {
+	case map[interface{}]interface{}:
+		out := make(map[interface{}]interface{})
+		for k, v := range t {
+			out[k] = expandEnvInterface(v)
+		}
+		return out
+	case []interface{}:
+		out := make([]interface{}, len(t))
+		for k, v := range t {
+			out[k] = expandEnvInterface(v)
+		}
+		return out
+	case string:
+		return os.ExpandEnv(t)
+	default:
+		fmt.Fprintf(os.Stderr, "Unhandled type during expanding environment: %T, ignored\n", t)
+	}
+	return i
 }
 
 func transformInterface(i interface{}, transforms []Transform, path string) interface{} {
@@ -120,7 +185,7 @@ func transformInterface(i interface{}, transforms []Transform, path string) inte
 	return i
 }
 
-func applyTransforms(resource map[string]interface{}, config *TransformerConfig, sources SourceMap) map[string]interface{} {
+func applyTransforms(resource map[string]interface{}, config *TransformerConfig, sources map[string]map[string]string) map[string]interface{} {
 	kind := getString(resource, "kind")
 	metadata := getMap(resource, "metadata")
 	name := getString(metadata, "name")

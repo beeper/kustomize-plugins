@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func convertEnvironmentConfig(config *SourceConfig) (map[string]string, error) {
+func convertEnvironmentConfig(config *SourceConfig) map[string]string {
 	out := make(map[string]string)
 
 	for k, v := range config.Vars {
@@ -19,17 +19,17 @@ func convertEnvironmentConfig(config *SourceConfig) (map[string]string, error) {
 		}
 	}
 
-	return out, nil
+	return out
 }
 
-func convertVariableConfig(config *SourceConfig) (map[string]string, error) {
+func convertVariableConfig(config *SourceConfig) map[string]string {
 	out := make(map[string]string)
 
 	for k, v := range config.Vars {
 		out[k] = v
 	}
 
-	return out, nil
+	return out
 }
 
 var DebugEnabled bool
@@ -61,27 +61,26 @@ func main() {
 	}
 
 	// initialize all sources
-	sources := make(SourceMap)
+	sources := make(map[string]map[string]string)
 	for name, source := range rl.FunctionConfig.Sources {
 
-		// allow overriding source config from env, could do dynamically with reflection?
-		source.Path = os.ExpandEnv(source.Path)
-		source.AwsRoleArn = os.ExpandEnv(source.AwsRoleArn)
-		source.AwsRegion = os.ExpandEnv(source.AwsRegion)
+		for k, v := range source.Args {
+			source.Args[k] = expandEnvInterface(v)
+		}
 
 		switch source.Type {
-		case "File":
-			sources[name], _ = convertFileConfig(&source)
-		case "Environment":
-			sources[name], _ = convertEnvironmentConfig(&source)
 		case "Variable":
-			sources[name], _ = convertVariableConfig(&source)
+			sources[name] = convertVariableConfig(&source)
+		case "Environment":
+			sources[name] = convertEnvironmentConfig(&source)
+		case "File":
+			sources[name] = filterMap(convertFileConfig(&source), source.Vars)
 		case "Exec":
-			sources[name], _ = convertExecConfig(&source)
+			sources[name] = filterMap(convertExecConfig(&source), source.Vars)
 		case "SecretsManager":
-			sources[name], _ = convertSecretsManagerConfig(&source)
+			sources[name] = filterMap(convertSecretsManagerConfig(&source), source.Vars)
 		case "TerraformState":
-			sources[name], _ = convertTerraformStateConfig(&source)
+			sources[name] = filterMap(convertTerraformStateConfig(&source), source.Vars)
 		default:
 			panic(errors.New("Invalid source type " + source.Type))
 		}

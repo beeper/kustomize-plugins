@@ -27,9 +27,10 @@ metadata:
 sources:
   <alias>:
     type: <type>
-    path: [source specific location]
-    awsRegion: [AWS region]
-    awsRoleArn: [AWS role ARN]
+    args:
+      [source specific arguments]
+      awsRegion: [AWS region]
+      awsRoleArn: [AWS role ARN]
 transforms:
  - source: <alias>
    regex: [regex]
@@ -44,7 +45,8 @@ All sources support environment variable expansion before evaluating:
 sources:
   common:
     type: File
-    path: ${HOME}/foo/bar.yml
+    args:
+      path: ${HOME}/foo/bar.yml
 ```
 
 ## Sources
@@ -94,14 +96,25 @@ sources:
 ```
 
 ### Exec
-Executes a command with `/bin/sh -c '<path>'` and expects the output to be valid YAML.
+Executes a command with and expects the output to be valid YAML.
 Support may be expanded in the future.
 
+Direct exec, first argument is looked up from current `$PATH`.
 ```yaml
 sources:
   <alias>:
     type: Exec
-    path: sops -d /path/to/secrets.enc.yaml
+    args:
+      command: ['sops', '-d', '/path/to/secrets.enc.yaml']
+```
+
+Shell exec through `/bin/sh -c <command>`:
+```yaml
+sources:
+  <alias>:
+    type: Exec
+    args:
+      command: sops -d /path/to/secrets.enc.yaml
 ```
 
 ### File
@@ -112,7 +125,8 @@ Variable files, YAML or JSON. Vars is optional, default is to expand all. Remote
 sources:
   <alias>:
     type: File
-    path: /path/to/some.json
+    args:
+      path: /path/to/some.json
     vars:
       original: alias
 ```
@@ -121,10 +135,11 @@ sources:
 sources:
   <alias>:
     type: File
-    path: s3://<bucket>/path/to/some.yaml
-    # AWS keys are optional, default env context is used as the base
-    awsRegion: eu-central-1
-    awsRoleArn: arn:...
+    args:
+      path: s3://<bucket>/path/to/some.yaml
+      # AWS keys are optional, default env context is used as the base
+      awsRegion: eu-central-1
+      awsRoleArn: arn:...
 ```
 
 ### AWS Secrets Manager
@@ -136,10 +151,11 @@ Non-JSON secrets are not supported in v1.
 sources:
   <alias>:
     type: SecretsManager
-    path: some/secret
-    # AWS keys are optional, default env context is used as the base
-    awsRegion: eu-central-1
-    awsRoleArn: arn:...
+    args:
+      name: some/secret
+      # AWS keys are optional, default env context is used as the base
+      awsRegion: eu-central-1
+      awsRoleArn: arn:...
 ```
 
 ### Terraform state
@@ -152,10 +168,11 @@ Local paths should also work.
 sources:
   <alias>:
     type: TerraformState
-    path: s3://<bucket>/state/<name>.tfstate
-    # AWS keys are optional, default env context is used as the base
-    awsRegion: eu-central-1
-    awsRoleArn: arn:...
+    args:
+      path: s3://<bucket>/state/<name>.tfstate
+      # AWS keys are optional, default env context is used as the base
+      awsRegion: eu-central-1
+      awsRoleArn: arn:...
 ```
 
 ## Transforms
