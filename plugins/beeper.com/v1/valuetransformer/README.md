@@ -1,5 +1,5 @@
 # Beeper value transformer for Kustomize
-A KRM Exec Function for transforming templated Kubernetes resources from any sensible variable or secrets source.
+A backwards compatible KRM Exec Function for transforming templated Kubernetes resources from any sensible variable or secrets source.
 
 To be able to execute this function Kustomize needs to be run with the following flags and the binary of this project needs to be available in your `$PATH`:
 ```sh
@@ -39,6 +39,8 @@ transforms:
      name: [name]
      namespace: [namespace]
 ```
+
+If you are running this with older Kustomize (or `kubectl kustomize`) you need to drop the annotations and make sure the executable is in the correct plugin directory.
 
 All sources support environment variable expansion before evaluating:
 ```yaml

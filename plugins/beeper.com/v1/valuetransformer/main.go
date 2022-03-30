@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strings"
 
@@ -35,14 +35,52 @@ func convertVariableConfig(config *SourceConfig) map[string]string {
 var DebugEnabled bool
 
 func main() {
-	rl := &ResourceList{}
-	input, err := ioutil.ReadAll(os.Stdin)
-	if err != nil {
-		panic(err)
+	envDebug := strings.ToUpper(os.Getenv("VALUETRANSFORMER_DEBUG"))
+	if len(envDebug) > 0 && (envDebug[0] == '1' || envDebug[0] == 'T') {
+		DebugEnabled = true
+		fmt.Fprintf(os.Stderr, "- WARNING - ValueTransformer debugging enabled - WARNING -\n")
 	}
 
-	if err := yaml.Unmarshal(input, rl); err != nil {
-		panic(err)
+	rl := &ResourceList{}
+
+	legacy := false
+	var input []byte
+	stdinDecoder := yaml.NewDecoder(os.Stdin)
+
+	// check if we are called as a legacy alpha plugin
+	if len(os.Args) > 1 {
+		configFile, err := os.Open(os.Args[1])
+		if err != nil {
+			panic(err)
+		}
+
+		configDecoder := yaml.NewDecoder(configFile)
+		if err := configDecoder.Decode(&rl.FunctionConfig); err != nil {
+			panic(err)
+		}
+
+		for {
+			item := make(map[string]interface{})
+			if err := stdinDecoder.Decode(&item); err != nil {
+				if err == io.EOF {
+					break
+				}
+				panic(err)
+			}
+
+			rl.Items = append(rl.Items, item)
+		}
+
+		// enable legacy output
+		legacy = true
+	} else {
+		if err := stdinDecoder.Decode(rl); err != nil {
+			panic(err)
+		}
+	}
+
+	if DebugEnabled {
+		fmt.Fprintf(os.Stderr, "Input:\n%s\n", input)
 	}
 
 	if rl.FunctionConfig.Kind != "ValueTransformer" {
@@ -51,13 +89,6 @@ func main() {
 
 	if rl.FunctionConfig.ApiVersion != "beeper.com/v1" {
 		panic(errors.New("unsupported apiVersion, expected beeper.com/v1"))
-	}
-
-	envDebug := strings.ToUpper(os.Getenv("VALUETRANSFORMER_DEBUG"))
-	if len(envDebug) > 0 && (envDebug[0] == '1' || envDebug[0] == 'T') {
-		DebugEnabled = true
-		fmt.Fprintf(os.Stderr, "- WARNING - ValueTransformer debugging enabled - WARNING -\n")
-		fmt.Fprintf(os.Stderr, "Input:\n%s\n", input)
 	}
 
 	// initialize all sources
@@ -99,10 +130,19 @@ func main() {
 	}
 	rl.Items = newItems
 
-	output, err := yaml.Marshal(rl)
-	if err != nil {
+	encoder := yaml.NewEncoder(os.Stdout)
+	if legacy {
+		for _, item := range rl.Items {
+			if err := encoder.Encode(item); err != nil {
+				panic(err)
+			}
+		}
+	} else {
+		if err := encoder.Encode(rl); err != nil {
+			panic(err)
+		}
+	}
+	if err := encoder.Close(); err != nil {
 		panic(err)
 	}
-
-	os.Stdout.Write(output)
 }
