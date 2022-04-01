@@ -30,7 +30,7 @@ type TransformConfig struct {
 type SourceConfig struct {
 	Type string                 `yaml:"type"`
 	Args map[string]interface{} `yaml:"args"`
-	Vars map[string]string      `yaml:"vars"` // filter and remap source data
+	Vars map[string]interface{} `yaml:"vars"` // filter and remap source data
 }
 
 type TransformerConfig struct {

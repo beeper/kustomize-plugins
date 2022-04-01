@@ -10,23 +10,13 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func convertEnvironmentConfig(config *SourceConfig) map[string]string {
+func convertEnvironmentConfig(config *SourceConfig, filter map[string]string) map[string]string {
 	out := make(map[string]string)
 
-	for k, v := range config.Vars {
+	for k, v := range filter {
 		if env, ok := os.LookupEnv(k); ok {
 			out[v] = env
 		}
-	}
-
-	return out
-}
-
-func convertVariableConfig(config *SourceConfig) map[string]string {
-	out := make(map[string]string)
-
-	for k, v := range config.Vars {
-		out[k] = v
 	}
 
 	return out
@@ -99,19 +89,22 @@ func main() {
 			source.Args[k] = expandEnvInterface(v)
 		}
 
+		flatVars := make(map[string]string)
+		flattenToMap(source.Vars, "", flatVars)
+
 		switch source.Type {
 		case "Variable":
-			sources[name] = convertVariableConfig(&source)
+			sources[name] = flatVars
 		case "Environment":
-			sources[name] = convertEnvironmentConfig(&source)
+			sources[name] = convertEnvironmentConfig(&source, flatVars)
 		case "File":
-			sources[name] = filterMap(convertFileConfig(&source), source.Vars)
+			sources[name] = filterMap(convertFileConfig(&source), flatVars)
 		case "Exec":
-			sources[name] = filterMap(convertExecConfig(&source), source.Vars)
+			sources[name] = filterMap(convertExecConfig(&source), flatVars)
 		case "SecretsManager":
-			sources[name] = filterMap(convertSecretsManagerConfig(&source), source.Vars)
+			sources[name] = filterMap(convertSecretsManagerConfig(&source), flatVars)
 		case "TerraformState":
-			sources[name] = filterMap(convertTerraformStateConfig(&source), source.Vars)
+			sources[name] = filterMap(convertTerraformStateConfig(&source), flatVars)
 		default:
 			panic(errors.New("Invalid source type " + source.Type))
 		}

@@ -58,17 +58,5 @@ func convertExecConfig(config *SourceConfig) map[string]string {
 
 	flat := make(map[string]string)
 	flattenToMap(raw, "", flat)
-	out := flat
-
-	// filter/rebuild out map if we have vars set
-	if len(config.Vars) > 0 {
-		out = make(map[string]string)
-		for k, v := range config.Vars {
-			if ov, ok := flat[k]; ok {
-				out[v] = ov
-			}
-		}
-	}
-
-	return out
+	return flat
 }
