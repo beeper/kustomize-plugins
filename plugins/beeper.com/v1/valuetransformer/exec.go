@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
@@ -48,6 +49,7 @@ func convertExecConfig(config *SourceConfig) map[string]string {
 	}
 
 	if err := process.Run(); err != nil {
+		fmt.Println("error running", process.Path, process.Args)
 		panic(err)
 	}
 
