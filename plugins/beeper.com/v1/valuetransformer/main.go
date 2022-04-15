@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 
 	"gopkg.in/yaml.v2"
 )
@@ -84,40 +85,48 @@ func main() {
 	}
 
 	// initialize all sources
+	var wg sync.WaitGroup
 	sources := make(map[string]map[string]string)
 	for name, source := range rl.FunctionConfig.Sources {
+		wg.Add(1)
 
-		for k, v := range source.Args {
-			source.Args[k] = expandEnvInterface(v)
-		}
-
-		flatVars := make(map[string]string)
-		flattenToMap(source.Vars, "", flatVars)
-
-		switch source.Type {
-		case "Variable":
-			sources[name] = flatVars
-		case "Environment":
-			sources[name] = convertEnvironmentConfig(&source, flatVars)
-		case "File":
-			sources[name] = filterMap(convertFileConfig(&source), flatVars)
-		case "Exec":
-			sources[name] = filterMap(convertExecConfig(&source), flatVars)
-		case "SecretsManager":
-			sources[name] = filterMap(convertSecretsManagerConfig(&source), flatVars)
-		case "TerraformState":
-			sources[name] = filterMap(convertTerraformStateConfig(&source), flatVars)
-		default:
-			panic(errors.New("Invalid source type " + source.Type))
-		}
-
-		if DebugEnabled {
-			fmt.Fprintf(os.Stderr, "Source '%s':\n", name)
-			for k, v := range sources[name] {
-				fmt.Fprintf(os.Stderr, "\t%s (%d chars)\n", k, len(v))
+		go func(name string, source SourceConfig) {
+			for k, v := range source.Args {
+				source.Args[k] = expandEnvInterface(v)
 			}
-		}
+
+			flatVars := make(map[string]string)
+			flattenToMap(source.Vars, "", flatVars)
+
+			switch source.Type {
+			case "Variable":
+				sources[name] = flatVars
+			case "Environment":
+				sources[name] = convertEnvironmentConfig(&source, flatVars)
+			case "File":
+				sources[name] = filterMap(convertFileConfig(&source), flatVars)
+			case "Exec":
+				sources[name] = filterMap(convertExecConfig(&source), flatVars)
+			case "SecretsManager":
+				sources[name] = filterMap(convertSecretsManagerConfig(&source), flatVars)
+			case "TerraformState":
+				sources[name] = filterMap(convertTerraformStateConfig(&source), flatVars)
+			default:
+				panic(errors.New("Invalid source type " + source.Type))
+			}
+
+			if DebugEnabled {
+				fmt.Fprintf(os.Stderr, "Source '%s':\n", name)
+				for k, v := range sources[name] {
+					fmt.Fprintf(os.Stderr, "\t%s (%d chars)\n", k, len(v))
+				}
+			}
+
+			wg.Done()
+		}(name, source)
 	}
+
+	wg.Wait()
 
 	// apply source merges
 	for name, merge := range rl.FunctionConfig.Merges {
