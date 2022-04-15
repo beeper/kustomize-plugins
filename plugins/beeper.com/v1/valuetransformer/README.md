@@ -163,6 +163,9 @@ sources:
 ### Terraform state
 
 Local or remote Terraform state output variables.
+Setting `output` will root the secret tree to given output key.
+
+If `output` is not given the whole TF output will be built into a tree.
 If `path` contains an S3 URL it is fetched with AWS credentials from there before processing.
 Local paths should also work.
 
@@ -172,6 +175,7 @@ sources:
     type: TerraformState
     args:
       path: s3://<bucket>/state/<name>.tfstate
+      output: [name]
       # AWS keys are optional, default env context is used as the base
       awsRegion: eu-central-1
       awsRoleArn: arn:...

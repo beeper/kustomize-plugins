@@ -2,8 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"strconv"
+	"errors"
 )
 
 type TerraformOutput struct {
@@ -17,7 +16,7 @@ type TerraformState struct {
 	Serial           int                        `json:"serial"`
 	Lineage          string                     `json:"lineage"`
 	Outputs          map[string]TerraformOutput `json:"outputs"`
-	//Resources        []interface{}              `json:"resources"`
+	//Resources      []interface{}              `json:"resources"`
 }
 
 func convertTerraformStateConfig(config *SourceConfig) map[string]string {
@@ -31,26 +30,29 @@ func convertTerraformStateConfig(config *SourceConfig) map[string]string {
 		panic(err)
 	}
 
-	out := make(map[string]string)
+	flat := make(map[string]string)
 
-	for name, output := range tfstate.Outputs {
-		if typ, ok := output.Type.(string); ok {
-			switch typ {
-			case "string":
-				if val, ok := output.Value.(string); ok {
-					out[name] = val
-				}
-			case "number":
-				if val, ok := output.Value.(float64); ok {
-					out[name] = fmt.Sprintf("%f", val)
-				}
-			case "bool":
-				if val, ok := output.Value.(bool); ok {
-					out[name] = strconv.FormatBool(val)
-				}
+	output := getString(config.Args, "output")
+	if output != "" {
+		if root, ok := tfstate.Outputs[output]; ok {
+			switch value := root.Value.(type) {
+			case map[interface{}]interface{}:
+				flattenToMap(value, "", flat)
+			case map[string]interface{}:
+				flattenToMap(value, "", flat)
+			default:
+				panic(errors.New("unsupported output type"))
 			}
+		} else {
+			panic(errors.New("could not find output key"))
 		}
+	} else {
+		raw := make(map[string]interface{})
+		for name, output := range tfstate.Outputs {
+			raw[name] = output.Value
+		}
+		flattenToMap(raw, "", flat)
 	}
 
-	return out
+	return flat
 }

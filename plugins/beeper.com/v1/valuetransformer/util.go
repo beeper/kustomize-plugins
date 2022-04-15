@@ -45,6 +45,8 @@ func flattenToMap(i interface{}, path string, out map[string]string) {
 		out[path] = ""
 	case string:
 		out[path] = v
+	case int, int64, float32, float64:
+		out[path] = fmt.Sprintf("%v", v)
 	case []interface{}:
 		for i, v := range v {
 			k := strconv.Itoa(i)
