@@ -87,6 +87,7 @@ func main() {
 	// initialize all sources
 	var wg sync.WaitGroup
 	sources := make(map[string]map[string]string)
+	var sourceLock sync.Mutex
 	for name, source := range rl.FunctionConfig.Sources {
 		wg.Add(1)
 
@@ -98,29 +99,35 @@ func main() {
 			flatVars := make(map[string]string)
 			flattenToMap(source.Vars, "", flatVars)
 
+			var vars map[string]string
+
 			switch source.Type {
 			case "Variable":
-				sources[name] = flatVars
+				vars = flatVars
 			case "Environment":
-				sources[name] = convertEnvironmentConfig(&source, flatVars)
+				vars = convertEnvironmentConfig(&source, flatVars)
 			case "File":
-				sources[name] = filterMap(convertFileConfig(&source), flatVars)
+				vars = filterMap(convertFileConfig(&source), flatVars)
 			case "Exec":
-				sources[name] = filterMap(convertExecConfig(&source), flatVars)
+				vars = filterMap(convertExecConfig(&source), flatVars)
 			case "SecretsManager":
-				sources[name] = filterMap(convertSecretsManagerConfig(&source), flatVars)
+				vars = filterMap(convertSecretsManagerConfig(&source), flatVars)
 			case "TerraformState":
-				sources[name] = filterMap(convertTerraformStateConfig(&source), flatVars)
+				vars = filterMap(convertTerraformStateConfig(&source), flatVars)
 			default:
 				panic(errors.New("Invalid source type " + source.Type))
 			}
 
 			if DebugEnabled {
 				fmt.Fprintf(os.Stderr, "Source '%s':\n", name)
-				for k, v := range sources[name] {
+				for k, v := range vars {
 					fmt.Fprintf(os.Stderr, "\t%s (%d chars)\n", k, len(v))
 				}
 			}
+
+			defer sourceLock.Unlock()
+			sourceLock.Lock()
+			sources[name] = vars
 
 			wg.Done()
 		}(name, source)
