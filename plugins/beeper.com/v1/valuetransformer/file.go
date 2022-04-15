@@ -32,13 +32,22 @@ func readFile(config *SourceConfig) ([]byte, error) {
 
 	switch u.Scheme {
 	case "s3":
-		awsRoleArn := getString(config.Args, "AwsRoleArn")
-		awsRegion := getString(config.Args, "AwsRegion")
+		awsRoleArn := getString(config.Args, "awsRoleArn")
+		awsRegion := getString(config.Args, "awsRegion")
 
 		sess := session.Must(session.NewSession())
-		creds := stscreds.NewCredentials(sess, awsRoleArn)
+		creds := sess.Config.Credentials
 
-		bucket := s3.New(sess, &aws.Config{Credentials: creds, Region: &awsRegion})
+		if awsRoleArn != "" {
+			creds = stscreds.NewCredentials(sess, awsRoleArn)
+		}
+
+		var region *string = nil
+		if awsRegion != "" {
+			region = &awsRegion
+		}
+
+		bucket := s3.New(sess, &aws.Config{Credentials: creds, Region: region})
 		goi := s3.GetObjectInput{}
 		goi.Bucket = &u.Host
 		goi.Key = &u.Path
