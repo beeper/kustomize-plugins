@@ -16,12 +16,22 @@ func convertSecretsManagerConfig(config *SourceConfig) map[string]string {
 		panic(errors.New("no secret name given"))
 	}
 
-	awsRoleArn := getString(config.Args, "AwsRoleArn")
-	awsRegion := getString(config.Args, "AwsRegion")
+	awsRoleArn := getString(config.Args, "awsRoleArn")
+	awsRegion := getString(config.Args, "awsRegion")
 
 	sess := session.Must(session.NewSession())
-	creds := stscreds.NewCredentials(sess, awsRoleArn)
-	sm := secretsmanager.New(sess, &aws.Config{Credentials: creds, Region: &awsRegion})
+	creds := sess.Config.Credentials
+
+	if awsRoleArn != "" {
+		creds = stscreds.NewCredentials(sess, awsRoleArn)
+	}
+
+	var region *string = nil
+	if awsRegion != "" {
+		region = &awsRegion
+	}
+
+	sm := secretsmanager.New(sess, &aws.Config{Credentials: creds, Region: region})
 
 	svi := secretsmanager.GetSecretValueInput{}
 	svi.SecretId = &name
