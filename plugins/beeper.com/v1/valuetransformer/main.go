@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -23,6 +24,7 @@ func convertEnvironmentConfig(config *SourceConfig, filter map[string]string) ma
 }
 
 var DebugEnabled bool
+var mergeSplit *regexp.Regexp = regexp.MustCompile(`^([^\.]+)\.(.+)$`)
 
 func main() {
 	envDebug := strings.ToUpper(os.Getenv("VALUETRANSFORMER_DEBUG"))
@@ -115,6 +117,46 @@ func main() {
 				fmt.Fprintf(os.Stderr, "\t%s (%d chars)\n", k, len(v))
 			}
 		}
+	}
+
+	// apply source merges
+	for name, merge := range rl.FunctionConfig.Merges {
+		if _, found := sources[name]; found {
+			panic(fmt.Errorf("merge '%s' is already a source", name))
+		}
+
+		flatMerge := make(map[string]string)
+		flattenToMap(merge, "", flatMerge)
+
+		if DebugEnabled {
+			fmt.Fprintf(os.Stderr, "Merge '%s':\n", name)
+		}
+
+		for k, v := range flatMerge {
+			split := mergeSplit.FindStringSubmatch(v)
+			if len(split) < 3 {
+				panic(fmt.Errorf("merge value '%s' was not a reference to a source", v))
+			}
+
+			sourceName := split[1]
+			sourceKey := split[2]
+
+			if source, ok := sources[sourceName]; ok {
+				if value, ok := source[sourceKey]; ok {
+					flatMerge[k] = value
+				} else {
+					panic(fmt.Errorf("merge key '%s' was not found from source '%s'", sourceKey, sourceName))
+				}
+			} else {
+				panic(fmt.Errorf("merge source '%s' was not found", sourceName))
+			}
+
+			if DebugEnabled {
+				fmt.Fprintf(os.Stderr, "\t%s (%d chars)\n", k, len(flatMerge[k]))
+			}
+		}
+
+		sources[name] = flatMerge
 	}
 
 	newItems := make([]map[string]interface{}, len(rl.Items))

@@ -37,5 +37,6 @@ type TransformerConfig struct {
 	ApiVersion string                  `yaml:"apiVersion"`
 	Kind       string                  `yaml:"kind"`
 	Sources    map[string]SourceConfig `yaml:"sources"`
+	Merges     map[string]interface{}  `yaml:"merges"`
 	Transforms []TransformConfig       `yaml:"transforms"`
 }

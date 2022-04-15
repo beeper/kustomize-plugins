@@ -31,6 +31,9 @@ sources:
       [source specific arguments]
       awsRegion: [AWS region]
       awsRoleArn: [AWS role ARN]
+merges:
+  <alias>:
+    ...
 transforms:
  - source: <alias>
    regex: [regex]
@@ -181,9 +184,24 @@ sources:
       awsRoleArn: arn:...
 ```
 
+## Merges
+
+Merges allow you to take in multiple sources and build a new combined source for transformation.
+The resulting alias works like any source in transformations.
+
+```yaml
+merges:
+  <alias>:
+    key: old_source.key
+    nested:
+      key: second_source.nested.key
+```
+
+All keys are flattened as for any source and all values are expected to be prefixed with the source alias and then the fully qualified flattened path of the original key.
+
 ## Transforms
 
-Select Kubernets objects for transforming.
+Select Kubernetes objects for transforming.
 Maps sources with optional transformation regex to resources.
 Sources and targets can be repeated to combine multiple sources.
 
