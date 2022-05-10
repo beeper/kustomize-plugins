@@ -160,16 +160,27 @@ func transformInterface(i interface{}, transforms []Transform, path string) inte
 			out = t
 		}
 
-		for _, transform := range transforms {
+		for i := range transforms {
+			transform := &transforms[i]
+
 			out = transform.regex.ReplaceAllStringFunc(out, func(sk string) string {
 				matches := transform.regex.FindStringSubmatch(sk)
 				if len(matches) < 2 {
 					return sk
 				}
-				repl, ok := (*transform.source)[matches[1]]
+
+				repl, ok := transform.source[matches[1]]
+
+				// update matched state for string if it doesn't exist or we found
+				matched, mok := transform.match[matches[0]]
+				if !mok || (ok && !matched) {
+					transform.match[matches[0]] = ok
+				}
+
 				if !ok {
 					return sk
 				}
+
 				return repl
 			})
 		}
@@ -218,12 +229,33 @@ func applyTransforms(resource map[string]interface{}, config *TransformerConfig,
 			regex = regexp.MustCompile(t.Regex)
 		}
 
-		transforms = append(transforms, Transform{regex, &source})
+		transforms = append(transforms, Transform{regex, source, make(map[string]bool)})
 
 		if DebugEnabled {
 			fmt.Fprintf(os.Stderr, "Enabled transform regex '%s' with source '%s' to %s/%s (target was %s/%s in %s)\n", regex.String(), t.Source, kind, name, t.Target.Kind, t.Target.Name, t.Target.Namespace)
 		}
 	}
 
-	return transformInterface(resource, transforms, kind).(map[string]interface{})
+	ret := transformInterface(resource, transforms, kind).(map[string]interface{})
+
+	misses := make(map[string]struct{})
+	for i := range transforms {
+		transform := &transforms[i]
+
+		for match, found := range transform.match {
+			if !found {
+				misses[match] = struct{}{}
+			} else {
+				delete(misses, match)
+			}
+		}
+	}
+
+	if len(misses) > 0 {
+		for missed := range misses {
+			fmt.Fprintf(os.Stderr, "Warning: ValueTransform match '%s' not found for resource %s/%s in namespace %s\n", missed, kind, name, namespace)
+		}
+	}
+
+	return ret
 }

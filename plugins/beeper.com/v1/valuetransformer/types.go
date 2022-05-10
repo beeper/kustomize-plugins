@@ -6,7 +6,8 @@ import (
 
 type Transform struct {
 	regex  *regexp.Regexp
-	source *map[string]string
+	source map[string]string
+	match  map[string]bool
 }
 
 type ResourceList struct {

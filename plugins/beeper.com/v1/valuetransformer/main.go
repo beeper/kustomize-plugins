@@ -149,7 +149,7 @@ func main() {
 		}
 
 		for k, v := range flatMerge {
-			split := mergeSplit.FindStringSubmatch(v)
+			split := mergeSplit.FindStringSubmatch(os.ExpandEnv(v))
 			if len(split) < 3 {
 				panic(fmt.Errorf("merge value '%s' was not a reference to a source", v))
 			}
