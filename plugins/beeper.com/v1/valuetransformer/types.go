@@ -16,16 +16,16 @@ type ResourceList struct {
 	FunctionConfig TransformerConfig        `yaml:"functionConfig"`
 }
 
-type TransformTarget struct {
+type Selector struct {
 	Kind      string `yaml:"kind"`
 	Name      string `yaml:"name"`
 	Namespace string `yaml:"namespace"`
 }
 
 type TransformConfig struct {
-	Source string          `yaml:"source"`
-	Regex  string          `yaml:"regex"`
-	Target TransformTarget `yaml:"target"`
+	Source string   `yaml:"source"`
+	Regex  string   `yaml:"regex"`
+	Target Selector `yaml:"target"`
 }
 
 type SourceConfig struct {
@@ -40,4 +40,5 @@ type TransformerConfig struct {
 	Sources    map[string]SourceConfig `yaml:"sources"`
 	Merges     map[string]interface{}  `yaml:"merges"`
 	Transforms []TransformConfig       `yaml:"transforms"`
+	Excludes   []Selector              `yaml:"excludes"`
 }

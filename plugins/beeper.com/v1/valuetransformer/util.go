@@ -204,6 +204,24 @@ func applyTransforms(resource map[string]interface{}, config *TransformerConfig,
 	name := getString(metadata, "name")
 	namespace := getString(metadata, "namespace")
 
+	for _, e := range config.Excludes {
+		if e.Kind != "" && e.Kind != kind {
+			continue
+		}
+		if e.Name != "" && e.Name != name {
+			continue
+		}
+		if e.Namespace != "" && e.Namespace != namespace {
+			continue
+		}
+
+		if DebugEnabled {
+			fmt.Fprintf(os.Stderr, "Filtered out %s/%s in %s from transformations\n", kind, name, namespace)
+		}
+
+		return resource
+	}
+
 	transforms := []Transform{}
 
 	for _, t := range config.Transforms {

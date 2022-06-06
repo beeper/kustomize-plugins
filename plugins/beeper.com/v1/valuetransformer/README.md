@@ -236,6 +236,18 @@ transforms:
       name: foo
 ```
 
+## Excludes
+
+Exclude Kubernetes objects for transforming.
+All keys are optional.
+
+```yaml
+excludes:
+  - kind: ConfigMap
+    name: init-script
+    namespace: somewhere
+```
+
 ## TODO
 - local cache for remote sources to speed up multiple executions within build
 - clean up and expand AWS configuration
