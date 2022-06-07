@@ -37,20 +37,11 @@ func main() {
 	rl := &ResourceList{}
 
 	legacy := false
-	var input []byte
 	stdinDecoder := yaml.NewDecoder(os.Stdin)
 
 	// check if we are called as a legacy alpha plugin
 	if len(os.Args) > 1 {
-		configFile, err := os.Open(os.Args[1])
-		if err != nil {
-			panic(err)
-		}
-
-		configDecoder := yaml.NewDecoder(configFile)
-		if err := configDecoder.Decode(&rl.FunctionConfig); err != nil {
-			panic(err)
-		}
+		readYamlFile(os.Args[1], &rl.FunctionConfig)
 
 		for {
 			item := make(map[string]interface{})
@@ -72,8 +63,16 @@ func main() {
 		}
 	}
 
-	if DebugEnabled {
-		fmt.Fprintf(os.Stderr, "Input:\n%s\n", input)
+	for _, includeFile := range rl.FunctionConfig.Includes {
+		includeFile = expandEnvInterface(includeFile).(string)
+
+		if DebugEnabled {
+			fmt.Fprintf(os.Stderr, "Including file: %s\n", includeFile)
+		}
+
+		includeConfig := TransformerConfig{}
+		readYamlFile(includeFile, &includeConfig)
+		mergeConfig(&rl.FunctionConfig, &includeConfig)
 	}
 
 	if rl.FunctionConfig.Kind != "ValueTransformer" {

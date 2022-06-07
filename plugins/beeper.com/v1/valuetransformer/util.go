@@ -277,3 +277,40 @@ func applyTransforms(resource map[string]interface{}, config *TransformerConfig,
 
 	return ret
 }
+
+func mergeConfig(dst *TransformerConfig, src *TransformerConfig) error {
+	dst.Includes = append(dst.Includes, src.Includes...)
+
+	if src.Sources != nil {
+		if dst.Sources == nil {
+			dst.Sources = map[string]SourceConfig{}
+		}
+
+		for k, v := range src.Sources {
+			if _, found := dst.Sources[k]; found {
+				return fmt.Errorf("included file has duplicate source: %s", k)
+			}
+
+			dst.Sources[k] = v
+		}
+	}
+
+	if src.Merges != nil {
+		if dst.Merges == nil {
+			dst.Merges = map[string]interface{}{}
+		}
+
+		for k, v := range src.Merges {
+			if _, found := dst.Merges[k]; found {
+				return fmt.Errorf("included file has duplicate merge: %s", k)
+			}
+
+			dst.Merges[k] = v
+		}
+	}
+
+	dst.Transforms = append(dst.Transforms, src.Transforms...)
+	dst.Excludes = append(dst.Excludes, src.Excludes...)
+
+	return nil
+}

@@ -15,6 +15,18 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+func readYamlFile(path string, dest interface{}) {
+	configFile, err := os.Open(path)
+	if err != nil {
+		panic(err)
+	}
+
+	configDecoder := yaml.NewDecoder(configFile)
+	if err := configDecoder.Decode(dest); err != nil {
+		panic(err)
+	}
+}
+
 func readFile(config *SourceConfig) ([]byte, error) {
 	var path string
 	switch p := config.Args["path"].(type) {

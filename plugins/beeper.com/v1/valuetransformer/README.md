@@ -24,6 +24,8 @@ metadata:
     config.kubernetes.io/function: |
       exec:
         path: valuetransformer
+includes:
+  - <path>
 sources:
   <alias>:
     type: <type>
@@ -41,6 +43,10 @@ transforms:
      kind: <kind>
      name: [name]
      namespace: [namespace]
+excludes:
+ - kind: <kind>
+   name: [name]
+   namespace: [namespace]
 ```
 
 If you are running this with older Kustomize (or `kubectl kustomize`) you need to drop the annotations and make sure the executable is in the correct plugin directory.
@@ -52,6 +58,15 @@ sources:
     type: File
     args:
       path: ${HOME}/foo/bar.yml
+```
+
+## Includes
+Allows including another ValueTransformer files using absolute paths.
+Supports environment variable expansion.
+
+```yaml
+includes:
+  - ${SOME_VAR}/valuetransformer.yaml
 ```
 
 ## Sources
