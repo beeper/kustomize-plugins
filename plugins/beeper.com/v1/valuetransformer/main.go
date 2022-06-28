@@ -24,6 +24,35 @@ func convertEnvironmentConfig(config *SourceConfig, filter map[string]string) ma
 	return out
 }
 
+func resolveIncludes(config *TransformerConfig) {
+	includes := map[string]struct{}{}
+	nincludes := -1
+
+	// include loop is going to be run until we don't include any new files anymore
+	for len(includes) > nincludes {
+		nincludes = len(includes)
+
+		for _, includeFile := range config.Includes {
+			includeFile = expandEnvInterface(includeFile).(string)
+
+			// no re-including files that we already have
+			if _, ok := includes[includeFile]; ok {
+				continue
+			}
+
+			includes[includeFile] = struct{}{}
+
+			if DebugEnabled {
+				fmt.Fprintf(os.Stderr, "Including file: %s\n", includeFile)
+			}
+
+			includeConfig := TransformerConfig{}
+			readYamlFile(includeFile, &includeConfig)
+			mergeConfig(config, &includeConfig)
+		}
+	}
+}
+
 var DebugEnabled bool
 var mergeSplit *regexp.Regexp = regexp.MustCompile(`^([^\.]+)\.(.+)$`)
 
@@ -63,17 +92,7 @@ func main() {
 		}
 	}
 
-	for _, includeFile := range rl.FunctionConfig.Includes {
-		includeFile = expandEnvInterface(includeFile).(string)
-
-		if DebugEnabled {
-			fmt.Fprintf(os.Stderr, "Including file: %s\n", includeFile)
-		}
-
-		includeConfig := TransformerConfig{}
-		readYamlFile(includeFile, &includeConfig)
-		mergeConfig(&rl.FunctionConfig, &includeConfig)
-	}
+	resolveIncludes(&rl.FunctionConfig)
 
 	if rl.FunctionConfig.Kind != "ValueTransformer" {
 		panic(errors.New("unsupported Kind, expected ValueTransformer"))
