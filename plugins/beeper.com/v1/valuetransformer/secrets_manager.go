@@ -40,11 +40,12 @@ func convertSecretsManagerConfig(config *SourceConfig) map[string]string {
 		panic(err)
 	}
 
-	out := make(map[string]string)
-
-	if err := json.Unmarshal([]byte(*svo.SecretString), &out); err != nil {
+	raw := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(*svo.SecretString), &raw); err != nil {
 		panic(err)
 	}
 
+	out := make(map[string]string)
+	flattenToMap(raw, "", out)
 	return out
 }
