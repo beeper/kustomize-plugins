@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -45,7 +46,7 @@ func flattenToMap(i interface{}, path string, out map[string]string) {
 		out[path] = ""
 	case string:
 		out[path] = v
-	case int, int64, float32, float64:
+	case bool, int, int64, float32, float64:
 		out[path] = fmt.Sprintf("%v", v)
 	case []interface{}:
 		for i, v := range v {
@@ -69,6 +70,12 @@ func flattenToMap(i interface{}, path string, out map[string]string) {
 				fmt.Fprintf(os.Stderr, "Unhandled map key during flattening: %T, value ignored\n", v)
 			}
 		}
+
+		if path != "" {
+			if data, err := json.Marshal(v); err == nil {
+				out[path] = string(data)
+			}
+		}
 	case map[string]interface{}:
 		for k, v := range v {
 			kpath := k
@@ -76,6 +83,12 @@ func flattenToMap(i interface{}, path string, out map[string]string) {
 				kpath = path + "." + k
 			}
 			flattenToMap(v, kpath, out)
+		}
+
+		if path != "" {
+			if data, err := json.Marshal(v); err == nil {
+				out[path] = string(data)
+			}
 		}
 	default:
 		fmt.Fprintf(os.Stderr, "Unhandled type during flattening: %T, defaulting to %%v\n", v)
