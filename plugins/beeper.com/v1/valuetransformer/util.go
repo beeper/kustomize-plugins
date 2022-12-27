@@ -57,6 +57,12 @@ func flattenToMap(i interface{}, path string, out map[string]string) {
 			}
 			flattenToMap(v, kpath, out)
 		}
+
+		if path != "" {
+			if data, err := json.Marshal(v); err == nil {
+				out[path] = string(data)
+			}
+		}
 	case map[interface{}]interface{}:
 		for k, v := range v {
 			switch kt := k.(type) {
