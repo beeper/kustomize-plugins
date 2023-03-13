@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func convertEnvironmentConfig(config *SourceConfig, filter map[string]string) map[string]string {
@@ -115,7 +115,7 @@ func main() {
 			}
 
 			flatVars := make(map[string]string)
-			flattenToMap(source.Vars, "", flatVars)
+			flattenToMapWithJsonify(source.Vars, "", flatVars, false)
 
 			var vars map[string]string
 
@@ -160,7 +160,7 @@ func main() {
 		}
 
 		flatMerge := make(map[string]string)
-		flattenToMap(merge, "", flatMerge)
+		flattenToMapWithJsonify(merge, "", flatMerge, false)
 
 		if DebugEnabled {
 			fmt.Fprintf(os.Stderr, "Merge '%s':\n", name)
@@ -182,7 +182,7 @@ func main() {
 					panic(fmt.Errorf("merge key '%s' was not found from source '%s'", sourceKey, sourceName))
 				}
 			} else {
-				panic(fmt.Errorf("merge source '%s' was not found", sourceName))
+				panic(fmt.Errorf("merge source '%s' was not found for key '%s'", sourceName, sourceKey))
 			}
 
 			if DebugEnabled {

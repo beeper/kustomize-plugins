@@ -12,12 +12,16 @@ import (
 )
 
 func getString(r map[string]interface{}, key string) string {
-	i := r[key]
+	i, ok := r[key]
+	if !ok {
+		return ""
+	}
 
 	switch v := i.(type) {
 	case string:
 		return v
 	default:
+		fmt.Fprintf(os.Stderr, "Failed to getString resource key '%s', type was %v\n", key, i)
 		return ""
 	}
 }
@@ -35,12 +39,19 @@ func getMap(r map[string]interface{}, key string) map[string]interface{} {
 		}
 		r[key] = nr
 		return nr
+	case map[string]interface{}:
+		return c
 	default:
+		fmt.Fprintf(os.Stderr, "Failed to getMap resource key '%s', type was %v\n", key, i)
 		return make(map[string]interface{})
 	}
 }
 
 func flattenToMap(i interface{}, path string, out map[string]string) {
+	flattenToMapWithJsonify(i, path, out, true)
+}
+
+func flattenToMapWithJsonify(i interface{}, path string, out map[string]string, jsonify bool) {
 	switch v := i.(type) {
 	case nil:
 		out[path] = ""
@@ -55,10 +66,10 @@ func flattenToMap(i interface{}, path string, out map[string]string) {
 			if len(path) > 0 {
 				kpath = path + "." + k
 			}
-			flattenToMap(v, kpath, out)
+			flattenToMapWithJsonify(v, kpath, out, jsonify)
 		}
 
-		if path != "" {
+		if path != "" && jsonify {
 			if data, err := json.Marshal(v); err == nil {
 				out[path] = string(data)
 			}
@@ -71,13 +82,13 @@ func flattenToMap(i interface{}, path string, out map[string]string) {
 				if len(path) > 0 {
 					kpath = path + "." + kt
 				}
-				flattenToMap(v, kpath, out)
+				flattenToMapWithJsonify(v, kpath, out, jsonify)
 			default:
 				fmt.Fprintf(os.Stderr, "Unhandled map key during flattening: %T, value ignored\n", v)
 			}
 		}
 
-		if path != "" {
+		if path != "" && jsonify {
 			if data, err := json.Marshal(v); err == nil {
 				out[path] = string(data)
 			}
@@ -88,10 +99,10 @@ func flattenToMap(i interface{}, path string, out map[string]string) {
 			if len(path) > 0 {
 				kpath = path + "." + k
 			}
-			flattenToMap(v, kpath, out)
+			flattenToMapWithJsonify(v, kpath, out, jsonify)
 		}
 
-		if path != "" {
+		if path != "" && jsonify {
 			if data, err := json.Marshal(v); err == nil {
 				out[path] = string(data)
 			}

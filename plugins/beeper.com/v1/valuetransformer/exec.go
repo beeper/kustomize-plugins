@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"strconv"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func convertExecConfig(config *SourceConfig) map[string]string {
