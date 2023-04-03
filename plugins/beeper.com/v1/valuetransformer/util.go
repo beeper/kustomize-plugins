@@ -201,6 +201,11 @@ func transformInterface(i interface{}, transforms []Transform, path string) inte
 
 				repl, foundRepl := transform.source[matches[1]]
 
+				if !foundRepl && len(matches) > 2 && len(matches[2]) > 0 {
+					repl = matches[3]
+					foundRepl = true
+				}
+
 				// update matched state for string if it doesn't exist or we found
 				matched, havePrevMatch := transform.match[matches[0]]
 				if !havePrevMatch || (foundRepl && !matched) {
@@ -272,7 +277,8 @@ func applyTransforms(resource map[string]interface{}, config *TransformerConfig,
 
 		var regex *regexp.Regexp
 		if t.Regex == "" {
-			regex = regexp.MustCompile(`\${([^}]*)}`)
+			// Groups are: (sourceKey) (defaultEnabledFlag :) (defaultValue)
+			regex = regexp.MustCompile(`\${([^}:]*)(:?)([^}:]*)}`)
 		} else {
 			regex = regexp.MustCompile(t.Regex)
 		}
