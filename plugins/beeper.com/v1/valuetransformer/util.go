@@ -199,15 +199,15 @@ func transformInterface(i interface{}, transforms []Transform, path string) inte
 					return sk
 				}
 
-				repl, ok := transform.source[matches[1]]
+				repl, foundRepl := transform.source[matches[1]]
 
 				// update matched state for string if it doesn't exist or we found
-				matched, mok := transform.match[matches[0]]
-				if !mok || (ok && !matched) {
-					transform.match[matches[0]] = ok
+				matched, havePrevMatch := transform.match[matches[0]]
+				if !havePrevMatch || (foundRepl && !matched) {
+					transform.match[matches[0]] = foundRepl
 				}
 
-				if !ok {
+				if !foundRepl {
 					return sk
 				}
 
