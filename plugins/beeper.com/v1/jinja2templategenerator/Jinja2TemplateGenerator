@@ -32,6 +32,10 @@ if __name__ == "__main__":
     with open(config["templateFile"], "r") as f:
         template = env.from_string(f.read())
 
+    shared_vars = config.get("globalVars", {})
+
     for target in config["renderTargets"]:
+        v = shared_vars.copy()
+        v.update(target)
         print("---")
-        print(template.render(**target))
+        print(template.render(**v))
