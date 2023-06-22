@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 
-import sys
 import os
+import sys
 
 import yaml
-from jinja2 import (
-    Environment,
-    FileSystemLoader
-)
+from jinja2 import Environment, FileSystemLoader
 
 
 def replace_text_in_lines(lines, strings_to_replace):
@@ -18,17 +15,23 @@ def replace_text_in_lines(lines, strings_to_replace):
             line = line.replace(match, replace)
         replaced_lines.append(line)
 
-    return '\n'.join(replaced_lines)
+    return "\n".join(replaced_lines)
 
 
-if __name__ == '__main__':
-    with open(sys.argv[1], 'r') as f:
+if __name__ == "__main__":
+    with open(sys.argv[1], "r") as f:
         config = yaml.load(f, Loader=yaml.SafeLoader)
 
-    env = Environment(loader=FileSystemLoader(os.path.abspath(config.get('includeDir', os.path.dirname(config['templateFile'])))))
-    with open(config['templateFile'], 'r') as f:
+    env = Environment(
+        loader=FileSystemLoader(
+            os.path.abspath(
+                config.get("includeDir", os.path.dirname(config["templateFile"]))
+            )
+        )
+    )
+    with open(config["templateFile"], "r") as f:
         template = env.from_string(f.read())
 
-    for target in config['renderTargets']:
-        print('---')
+    for target in config["renderTargets"]:
+        print("---")
         print(template.render(**target))
