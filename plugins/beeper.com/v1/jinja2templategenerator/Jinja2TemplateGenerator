@@ -33,6 +33,7 @@ if __name__ == "__main__":
         template = env.from_string(f.read())
 
     shared_vars = config.get("globalVars", {})
+    shared_vars["getenv"] = os.environ
 
     for target in config["renderTargets"]:
         v = shared_vars.copy()
